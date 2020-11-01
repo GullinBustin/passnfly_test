@@ -1,4 +1,5 @@
 import io
+import os
 import csv
 import json
 import pika
@@ -16,6 +17,9 @@ airport = api.model('Airport', airport_api_model)
 upload_parser = api.parser()
 upload_parser.add_argument('file', location='files',
                            type=FileStorage, required=True)
+
+rabbitmq_host = os.getenv('RABBITMQ_HOST')
+rabbitmq_queue = os.getenv('RABBITMQ_QUEUE')
 
 
 @api.route('/')
@@ -73,7 +77,7 @@ class AirportCSV(Resource):
             db.session.add(temp_airport)
             db.session.flush()
         db.session.commit()
-        return 200
+        return
 
 
 def job_body_builder(method, id=None, params=None):
@@ -88,12 +92,12 @@ class AirportJobC(Resource):
     @api.doc('job_create_airport')
     @api.expect(airport)
     def post(self):
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbitmq_host))
         channel = connection.channel()
-        channel.queue_declare(queue='airports_api', durable=True)
+        channel.queue_declare(queue=rabbitmq_queue, durable=True)
         channel.basic_publish(
             exchange='',
-            routing_key='airports_api',
+            routing_key=rabbitmq_queue,
             body=job_body_builder("create", params=api.payload),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
@@ -108,12 +112,12 @@ class AirportJobUD(Resource):
 
     @api.doc('job_delete_airport')
     def delete(self, id):
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbitmq_host))
         channel = connection.channel()
-        channel.queue_declare(queue='airports_api', durable=True)
+        channel.queue_declare(queue=rabbitmq_queue, durable=True)
         channel.basic_publish(
             exchange='',
-            routing_key='airports_api',
+            routing_key=rabbitmq_queue,
             body=job_body_builder("delete", id=id),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
@@ -124,15 +128,17 @@ class AirportJobUD(Resource):
     @api.doc('job_update_airport')
     @api.expect(airport)
     def put(self, id):
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbitmq_host))
         channel = connection.channel()
-        channel.queue_declare(queue='airports_api', durable=True)
+        channel.queue_declare(queue=rabbitmq_queue, durable=True)
         channel.basic_publish(
             exchange='',
-            routing_key='airports_api',
+            routing_key=rabbitmq_queue,
             body=job_body_builder("update", id=id, params=api.payload),
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             ))
         connection.close()
         return 200
+
+#TODO Responses
