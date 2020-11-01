@@ -13,7 +13,7 @@ services:
     restart: always
     
   passnfly_api:
-    image: passnfly_api:0.1.0-RC1
+    build: API/
     restart: always
     ports:
       - "5000:5000"
@@ -26,7 +26,7 @@ services:
         RABBITMQ_QUEUE: airports_api
 
   passnfly_async:
-    image: passnfly_async:0.1.0-RC1
+    build: async_process
     restart: always
     environment:
         MYSQL_HOST: mysql
