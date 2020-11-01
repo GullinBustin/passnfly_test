@@ -5,7 +5,11 @@ import pytest
 my_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, my_path + '/../source')
 
-os.environ['MYSQL_URI'] = 'mysql://root:my-secret-pw@127.0.0.1:3306/real_test'
+os.environ['MYSQL_HOST'] = 'localhost'
+os.environ['MYSQL_USER'] = 'root'
+os.environ['MYSQL_PASS'] = 'my-secret-pw'
+os.environ['MYSQL_DATABASE'] = 'test'
+
 os.environ['RABBITMQ_HOST'] = 'localhost'
 os.environ['RABBITMQ_QUEUE'] = 'test'
 
