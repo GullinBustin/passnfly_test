@@ -26,7 +26,7 @@ rabbitmq_queue = os.getenv('RABBITMQ_QUEUE')
 class AirportCR(Resource):
 
     @api.doc('list_airports')
-    @api.marshal_list_with(airport)
+    @api.marshal_list_with(airport, code=200)
     def get(self):
         return Airport.query.all()
 
@@ -48,7 +48,7 @@ class AirportUD(Resource):
     def delete(self, id):
         Airport.query.filter_by(id=id).delete()
         db.session.commit()
-        return 204
+        return {"message": f"Item {id} deleted"}, 204
 
     @api.doc('update_airport')
     @api.expect(airport)
@@ -57,6 +57,8 @@ class AirportUD(Resource):
         n_updated = Airport.query.filter_by(id=id).update(api.payload)
         db.session.commit()
         temp_airport = Airport.query.filter_by(id=id).first()
+        if n_updated == 0:
+            return {"message": "ID not found"}, 404
         return temp_airport, 200
 
 
@@ -77,7 +79,7 @@ class AirportCSV(Resource):
             db.session.add(temp_airport)
             db.session.flush()
         db.session.commit()
-        return
+        return {"message": "CSV loaded successfully"}, 200
 
 
 def job_body_builder(method, id=None, params=None):
@@ -100,10 +102,10 @@ class AirportJobC(Resource):
             routing_key=rabbitmq_queue,
             body=job_body_builder("create", params=api.payload),
             properties=pika.BasicProperties(
-                delivery_mode=2,  # make message persistent
+                delivery_mode=2,
             ))
         connection.close()
-        return 200
+        return {"message": "Job added successfully"}, 200
 
 
 @api.route('/add-job/<id>')
@@ -120,10 +122,10 @@ class AirportJobUD(Resource):
             routing_key=rabbitmq_queue,
             body=job_body_builder("delete", id=id),
             properties=pika.BasicProperties(
-                delivery_mode=2,  # make message persistent
+                delivery_mode=2,
             ))
         connection.close()
-        return 200
+        return {"message": "Job added successfully"}, 200
 
     @api.doc('job_update_airport')
     @api.expect(airport)
@@ -136,9 +138,7 @@ class AirportJobUD(Resource):
             routing_key=rabbitmq_queue,
             body=job_body_builder("update", id=id, params=api.payload),
             properties=pika.BasicProperties(
-                delivery_mode=2,  # make message persistent
+                delivery_mode=2,
             ))
         connection.close()
-        return 200
-
-#TODO Responses
+        return {"message": "Job added successfully"}, 200

@@ -10,7 +10,12 @@ pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
 api = Api(app, version='1.0', title='Passnfly Test')
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('MYSQL_URI')
+
+mysql_uri = f"mysql://{os.getenv('MYSQL_USER')}:" \
+            f"{os.getenv('MYSQL_PASS')}@" \
+            f"{os.getenv('MYSQL_HOST')}:3306/" \
+            f"{os.getenv('MYSQL_DATABASE')}"
+app.config["SQLALCHEMY_DATABASE_URI"] = mysql_uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 db.init_app(app)
@@ -18,4 +23,4 @@ api.add_namespace(airports)
 db.create_all(app=app)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
